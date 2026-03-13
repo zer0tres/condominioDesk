@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "637650448436",
+    "project_id": "condominio-desk",
+    "storage_bucket": "condominio-desk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:637650448436:android:4285948c6f16a8e5d6da61",
+        "android_client_info": {
+          "package_name": "com.condominiodesk.condominio_desk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNXicfd-AwOqKoESyC8RgoqujVo4kcdv0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

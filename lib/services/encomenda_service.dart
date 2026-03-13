@@ -17,7 +17,7 @@ class EncomendaService {
   Future<List<Encomenda>> listarPendentes() async {
     final response = await _supabase
         .from('encomendas')
-        .select('*, salas(numero, nome_empresa)')
+        .select()
         .eq('status', 'pendente')
         .order('criado_em', ascending: false);
     return response.map((e) => Encomenda.fromJson(e)).toList();
@@ -46,6 +46,17 @@ class EncomendaService {
       'foto_expira_em': expiraEm.toIso8601String(),
       'status': 'pendente',
     });
+
+    // Dispara notificacao push para a sala
+    try {
+      await _supabase.functions.invoke('notify-encomenda', body: {
+        'sala_id': salaId,
+        'nome_destinatario': nomeDestinatario,
+        'codigo_rastreio': codigoRastreio,
+      });
+    } catch (_) {
+      // Notificacao falhou mas encomenda foi registrada
+    }
   }
 
   Future<void> marcarRetirada(String encomendaId) async {

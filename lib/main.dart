@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'config/supabase_config.dart';
 import 'config/firebase_options.dart';
 import 'screens/portaria/login_screen.dart';
@@ -14,6 +15,7 @@ Future<void> main() async {
     anonKey: SupabaseConfig.anonKey,
   );
   await NotificationService.init();
+  await initializeDateFormatting('pt_BR', null);
   runApp(const MyApp());
 }
 
@@ -25,6 +27,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Condominio Desk',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('pt', 'BR'),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,

@@ -7,6 +7,7 @@ import '../../models/espaco_comum.dart';
 import '../../services/encomenda_service.dart';
 import '../../services/reserva_service.dart';
 import '../../services/notification_service.dart';
+import '../../widgets/foto_fullscreen_viewer.dart';
 
 class SalaHomeScreen extends StatefulWidget {
   final Sala sala;
@@ -174,9 +175,26 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(e.fotoUrl!,
-                  height: 150, width: double.infinity, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                child: GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => FotoFullscreenViewer(fotoUrl: e.fotoUrl!))),
+                  child: Stack(
+                    children: [
+                      Image.network(e.fotoUrl!,
+                        height: 150, width: double.infinity, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                      Positioned(
+                        bottom: 8, right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black45,
+                            borderRadius: BorderRadius.circular(8)),
+                          child: const Icon(Icons.fullscreen, color: Colors.white, size: 20)),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],

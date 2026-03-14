@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../models/encomenda.dart';
+import '../../models/sala.dart';
 import '../../services/encomenda_service.dart';
 import '../../services/sala_service.dart';
-import '../../models/sala.dart';
 import 'registrar_encomenda_screen.dart';
+import 'detalhe_encomenda_screen.dart';
 
 class EncomendasScreen extends StatefulWidget {
   const EncomendasScreen({super.key});
@@ -20,7 +22,7 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
   List<Encomenda> _encomendas = [];
   List<Sala> _resultadosBusca = [];
   bool _loading = true;
-  
+  String _filtro = 'pendente';
 
   @override
   void initState() {
@@ -43,7 +45,6 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
       setState(() => _resultadosBusca = []);
       return;
     }
-    
     try {
       List<Sala> resultados;
       if (int.tryParse(termo) != null) {
@@ -53,8 +54,52 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
         resultados = await _salaService.buscarPorNome(termo);
       }
       setState(() => _resultadosBusca = resultados);
-    } finally {
-      
+    } catch (_) {}
+  }
+
+  Future<void> _marcarRetirada(Encomenda encomenda) async {
+    final nomeController = TextEditingController();
+    final confirma = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmar retirada'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Encomenda de ${encomenda.nomeDestinatario}'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nomeController,
+              decoration: InputDecoration(
+                labelText: 'Nome de quem retirou',
+                prefixIcon: const Icon(Icons.person),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12))),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () {
+              if (nomeController.text.trim().isEmpty) return;
+              Navigator.pop(context, true);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirmar', style: TextStyle(color: Colors.white))),
+        ],
+      ),
+    );
+    if (confirma == true && nomeController.text.trim().isNotEmpty) {
+      await _encomendaService.marcarRetirada(encomenda.id, nomeController.text.trim());
+      _carregarEncomendas();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Encomenda marcada como retirada!'),
+            backgroundColor: Colors.green));
+      }
     }
   }
 
@@ -66,26 +111,38 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
           Container(
             color: Colors.indigo.shade50,
             padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _buscaController,
-              onChanged: _buscarSala,
-              decoration: InputDecoration(
-                hintText: 'Buscar sala por número ou empresa...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _buscaController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _buscaController.clear();
-                        setState(() => _resultadosBusca = []);
-                      })
-                  : null,
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none),
-              ),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _buscaController,
+                  onChanged: _buscarSala,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar sala por numero ou empresa...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _buscaController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _buscaController.clear();
+                            setState(() => _resultadosBusca = []);
+                          })
+                      : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _filtroChip('pendente', 'Pendentes', Colors.orange),
+                    const SizedBox(width: 8),
+                    _filtroChip('retirada', 'Retiradas', Colors.green),
+                  ],
+                ),
+              ],
             ),
           ),
           if (_resultadosBusca.isNotEmpty)
@@ -97,8 +154,7 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
                   const Padding(
                     padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
                     child: Text('Salas encontradas:',
-                      style: TextStyle(fontWeight: FontWeight.bold,
-                          color: Colors.grey)),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
                   ),
                   ..._resultadosBusca.map((sala) => ListTile(
                     leading: const CircleAvatar(
@@ -130,9 +186,11 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
                         Icon(Icons.inventory_2_outlined,
                           size: 64, color: Colors.grey.shade300),
                         const SizedBox(height: 16),
-                        Text('Nenhuma encomenda pendente',
-                          style: TextStyle(color: Colors.grey.shade500,
-                              fontSize: 16)),
+                        Text(
+                          _filtro == 'pendente'
+                            ? 'Nenhuma encomenda pendente'
+                            : 'Nenhuma encomenda retirada',
+                          style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
                       ],
                     ))
                 : RefreshIndicator(
@@ -145,18 +203,46 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
-                            leading: const CircleAvatar(
-                              backgroundColor: Colors.orange,
-                              child: Icon(Icons.inventory_2,
-                                  color: Colors.white, size: 18)),
+                            onTap: () async {
+                              await Navigator.push(context, MaterialPageRoute(
+                                builder: (_) => DetalheEncomendaScreen(
+                                  encomenda: e,
+                                  nomeEmpresa: 'Sala ${e.salaId}')));
+                              _carregarEncomendas();
+                            },
+                            leading: CircleAvatar(
+                              backgroundColor: e.isPendente ? Colors.orange : Colors.green,
+                              child: Icon(
+                                e.isPendente ? Icons.inventory_2 : Icons.check_circle,
+                                color: Colors.white, size: 18)),
                             title: Text(e.nomeDestinatario,
                               style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(e.codigoRastreio ?? 'Sem código'),
-                            trailing: const Chip(
-                              label: Text('Pendente',
-                                style: TextStyle(fontSize: 11, color: Colors.white)),
-                              backgroundColor: Colors.orange,
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(e.codigoRastreio ?? 'Sem codigo'),
+                                Text(DateFormat('dd/MM HH:mm').format(e.criadoEm),
+                                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                              ],
                             ),
+                            trailing: e.isPendente
+                              ? ElevatedButton(
+                                  onPressed: () => _marcarRetirada(e),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                                  child: const Text('Retirada',
+                                    style: TextStyle(color: Colors.white, fontSize: 12)))
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                    if (e.retiradoPor != null)
+                                      Text(e.retiradoPor!,
+                                        style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                  ],
+                                ),
                           ),
                         );
                       },
@@ -174,6 +260,37 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('Nova Encomenda'),
+      ),
+    );
+  }
+
+  Widget _filtroChip(String valor, String label, Color cor) {
+    final selecionado = _filtro == valor;
+    return GestureDetector(
+      onTap: () async {
+        setState(() { _filtro = valor; _loading = true; });
+        try {
+          List<Encomenda> lista;
+          if (valor == 'pendente') {
+            lista = await _encomendaService.listarPendentes();
+          } else {
+            lista = await _encomendaService.listarRetiradas();
+          }
+          setState(() => _encomendas = lista);
+        } finally {
+          setState(() => _loading = false);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selecionado ? cor : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cor)),
+        child: Text(label,
+          style: TextStyle(
+            color: selecionado ? Colors.white : cor,
+            fontWeight: FontWeight.bold)),
       ),
     );
   }

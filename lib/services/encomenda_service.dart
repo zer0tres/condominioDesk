@@ -14,6 +14,16 @@ class EncomendaService {
     return response.map((e) => Encomenda.fromJson(e)).toList();
   }
 
+  Future<List<Encomenda>> listarRetiradas() async {
+    final response = await _supabase
+        .from('encomendas')
+        .select()
+        .eq('status', 'retirada')
+        .order('retirado_em', ascending: false)
+        .limit(50);
+    return response.map((e) => Encomenda.fromJson(e)).toList();
+  }
+
   Future<List<Encomenda>> listarPendentes() async {
     final response = await _supabase
         .from('encomendas')
@@ -59,10 +69,11 @@ class EncomendaService {
     }
   }
 
-  Future<void> marcarRetirada(String encomendaId) async {
+  Future<void> marcarRetirada(String encomendaId, String retiradoPor) async {
     await _supabase.from('encomendas').update({
       'status': 'retirada',
       'retirado_em': DateTime.now().toIso8601String(),
+      'retirado_por': retiradoPor,
     }).eq('id', encomendaId);
   }
 }

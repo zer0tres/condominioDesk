@@ -8,6 +8,7 @@ class Encomenda {
   final String status;
   final DateTime criadoEm;
   final DateTime? retiradoEm;
+  final String? retiradoPor;
 
   Encomenda({
     required this.id,
@@ -19,6 +20,7 @@ class Encomenda {
     required this.status,
     required this.criadoEm,
     this.retiradoEm,
+    this.retiradoPor,
   });
 
   factory Encomenda.fromJson(Map<String, dynamic> json) {
@@ -36,6 +38,7 @@ class Encomenda {
       retiradoEm: json['retirado_em'] != null
           ? DateTime.parse(json['retirado_em'])
           : null,
+      retiradoPor: json['retirado_por'],
     );
   }
 

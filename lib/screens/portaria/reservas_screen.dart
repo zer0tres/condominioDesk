@@ -111,8 +111,18 @@ class _ReservasScreenState extends State<ReservasScreen> {
                                 color: Colors.white, size: 18)),
                             title: Text(_nomesEspacos(r.espacoIds),
                               style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(
-                              '${r.horaInicio.substring(0,5)} - ${r.horaFim.substring(0,5)} | ${r.responsavelNome}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${r.horaInicio.substring(0,5)} - ${r.horaFim.substring(0,5)} | ${r.responsavelNome}'),
+                                if (r.numPessoas != null)
+                                  Text('${r.numPessoas} pessoas', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                if (r.valorTotal != null)
+                                  Text('R\$ ${r.valorTotal!.toStringAsFixed(2)}',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                              ],
+                            ),
+                            isThreeLine: true,
                             trailing: IconButton(
                               icon: const Icon(Icons.delete_outline, color: Colors.red),
                               onPressed: () async {

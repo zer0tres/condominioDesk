@@ -50,6 +50,15 @@ class ReservaService {
     return false;
   }
 
+  // Valores de teste por espaco por hora (R$)
+  static const Map<String, double> valoresPorHora = {
+    'Copa/Cozinha': 50.0,
+    'Sala Privativa': 150.0,
+    'Sala A': 100.0,
+    'Sala B': 100.0,
+    'Sala C': 100.0,
+  };
+
   Future<void> criar({
     required List<String> espacoIds,
     required DateTime data,
@@ -57,6 +66,11 @@ class ReservaService {
     required String horaFim,
     required String responsavelNome,
     String? salaId,
+    int? numPessoas,
+    String? duracaoTipo,
+    double? duracaoValor,
+    double? valorTotal,
+    String? observacoes,
   }) async {
     final conflito = await verificarConflito(
       espacoIds: espacoIds,
@@ -73,6 +87,11 @@ class ReservaService {
       'hora_fim': horaFim,
       'responsavel_nome': responsavelNome,
       'sala_id': salaId,
+      'num_pessoas': numPessoas,
+      'duracao_tipo': duracaoTipo,
+      'duracao_valor': duracaoValor,
+      'valor_total': valorTotal,
+      'observacoes': observacoes,
     });
   }
 

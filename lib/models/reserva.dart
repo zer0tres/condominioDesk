@@ -6,6 +6,11 @@ class Reserva {
   final String horaInicio;
   final String horaFim;
   final String responsavelNome;
+  final int? numPessoas;
+  final String? duracaoTipo;
+  final double? duracaoValor;
+  final double? valorTotal;
+  final String? observacoes;
   final DateTime criadoEm;
 
   Reserva({
@@ -16,6 +21,11 @@ class Reserva {
     required this.horaInicio,
     required this.horaFim,
     required this.responsavelNome,
+    this.numPessoas,
+    this.duracaoTipo,
+    this.duracaoValor,
+    this.valorTotal,
+    this.observacoes,
     required this.criadoEm,
   });
 
@@ -28,6 +38,13 @@ class Reserva {
       horaInicio: json['hora_inicio'],
       horaFim: json['hora_fim'],
       responsavelNome: json['responsavel_nome'],
+      numPessoas: json['num_pessoas'],
+      duracaoTipo: json['duracao_tipo'],
+      duracaoValor: json['duracao_valor'] != null
+          ? double.parse(json['duracao_valor'].toString()) : null,
+      valorTotal: json['valor_total'] != null
+          ? double.parse(json['valor_total'].toString()) : null,
+      observacoes: json['observacoes'],
       criadoEm: DateTime.parse(json['criado_em']),
     );
   }

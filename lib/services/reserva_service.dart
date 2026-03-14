@@ -13,6 +13,17 @@ class ReservaService {
     return response.map((e) => EspacoComum.fromJson(e)).toList();
   }
 
+  Future<List<Reserva>> listarProximas() async {
+    final hoje = DateTime.now().toIso8601String().split('T')[0];
+    final response = await _supabase
+        .from('reservas')
+        .select()
+        .gte('data', hoje)
+        .order('data')
+        .order('hora_inicio');
+    return response.map((e) => Reserva.fromJson(e)).toList();
+  }
+
   Future<List<Reserva>> listarPorData(DateTime data) async {
     final dataStr = data.toIso8601String().split('T')[0];
     final response = await _supabase

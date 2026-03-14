@@ -11,39 +11,38 @@ class SalaAcessoScreen extends StatefulWidget {
 }
 
 class _SalaAcessoScreenState extends State<SalaAcessoScreen> {
-  final _codigoController = TextEditingController();
+  final _numeroController = TextEditingController();
+  final _senhaController = TextEditingController();
   final _salaService = SalaService();
   bool _loading = false;
+  bool _senhaVisivel = false;
   String? _erro;
 
   Future<void> _acessar() async {
-    final codigo = _codigoController.text.trim();
-    if (codigo.isEmpty) {
-      setState(() => _erro = 'Digite o número da sala.');
+    final numero = _numeroController.text.trim();
+    final senha = _senhaController.text.trim();
+
+    if (numero.isEmpty || senha.isEmpty) {
+      setState(() => _erro = 'Preencha todos os campos.');
       return;
     }
 
-    // Valida se é um número de sala válido (andar 4-25, sala 01-10)
-    final numero = int.tryParse(codigo);
-    bool salaValida = false;
-    if (numero != null) {
-      final andar = numero ~/ 100;
-      final sala = numero % 100;
-      salaValida = andar >= 4 && andar <= 25 && sala >= 1 && sala <= 10;
-    }
-    if (!salaValida) {
-      setState(() => _erro = 'Sala inválida. Ex: 401, 1203, 2510.');
+    final n = int.tryParse(numero);
+    final andar = n != null ? n ~/ 100 : 0;
+    final salaNum = n != null ? n % 100 : 0;
+    if (n == null || andar < 4 || andar > 25 || salaNum < 1 || salaNum > 10) {
+      setState(() => _erro = 'Numero de sala invalido.');
       return;
     }
 
     setState(() { _loading = true; _erro = null; });
-
     try {
-      final Sala? sala = await _salaService.buscarPorNumero(codigo);
+      final Sala? sala = await _salaService.autenticar(numero, senha);
       if (!mounted) return;
-
       if (sala == null) {
-        setState(() => _erro = 'Sala não encontrada. Fale com a portaria.');
+        setState(() => _erro = 'Numero ou senha incorretos.');
+      } else if (sala.isPrimeiroAcesso) {
+        _mostrarDialogNovaSenha(sala);
       } else {
         Navigator.pushReplacement(context,
           MaterialPageRoute(builder: (_) => SalaHomeScreen(sala: sala)));
@@ -53,6 +52,75 @@ class _SalaAcessoScreenState extends State<SalaAcessoScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _mostrarDialogNovaSenha(Sala sala) {
+    final novaSenhaController = TextEditingController();
+    final confirmarController = TextEditingController();
+    String? erroDialog;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateDialog) => AlertDialog(
+          title: const Text('Primeiro acesso'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Crie sua senha pessoal para acessar suas encomendas.'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: novaSenhaController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Nova senha',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12))),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: confirmarController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Confirmar senha',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12))),
+              ),
+              if (erroDialog != null) ...[
+                const SizedBox(height: 8),
+                Text(erroDialog!, style: const TextStyle(color: Colors.red)),
+              ],
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                final nova = novaSenhaController.text.trim();
+                final confirmar = confirmarController.text.trim();
+                if (nova.length < 4) {
+                  setStateDialog(() => erroDialog = 'Senha muito curta (min. 4 caracteres).');
+                  return;
+                }
+                if (nova != confirmar) {
+                  setStateDialog(() => erroDialog = 'As senhas nao coincidem.');
+                  return;
+                }
+                await _salaService.atualizarSenha(sala.id, nova);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) {
+                  Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (_) => SalaHomeScreen(sala: sala)));
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal.shade900),
+              child: const Text('Salvar senha', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -76,20 +144,44 @@ class _SalaAcessoScreenState extends State<SalaAcessoScreen> {
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold,
                     color: Colors.white)),
               const SizedBox(height: 8),
-              const Text('Digite o número da sua sala',
+              const Text('Digite o numero e senha da sua sala',
                 style: TextStyle(fontSize: 16, color: Colors.white70)),
               const SizedBox(height: 48),
               TextField(
-                controller: _codigoController,
+                controller: _numeroController,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 32,
-                    fontWeight: FontWeight.bold, letterSpacing: 8),
+                style: const TextStyle(color: Colors.white, fontSize: 28,
+                    fontWeight: FontWeight.bold, letterSpacing: 4),
                 maxLength: 4,
                 decoration: InputDecoration(
                   hintText: '401',
-                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 32),
+                  hintStyle: const TextStyle(color: Colors.white30, fontSize: 28),
                   counterText: '',
+                  labelText: 'Numero da sala',
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.white30, width: 2),
+                    borderRadius: BorderRadius.circular(16)),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.white, width: 2),
+                    borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _senhaController,
+                obscureText: !_senhaVisivel,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: 'Senha',
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _senhaVisivel ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white70),
+                    onPressed: () => setState(() => _senhaVisivel = !_senhaVisivel),
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderSide: const BorderSide(color: Colors.white30, width: 2),
                     borderRadius: BorderRadius.circular(16)),

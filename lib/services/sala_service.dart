@@ -31,6 +31,24 @@ class SalaService {
     return response.map((e) => Sala.fromJson(e)).toList();
   }
 
+  Future<Sala?> autenticar(String numero, String senha) async {
+    final response = await _supabase
+        .from('salas')
+        .select()
+        .eq('numero', numero)
+        .eq('senha', senha)
+        .maybeSingle();
+    if (response == null) return null;
+    return Sala.fromJson(response);
+  }
+
+  Future<void> atualizarSenha(String salaId, String novaSenha) async {
+    await _supabase
+        .from('salas')
+        .update({'senha': novaSenha})
+        .eq('id', salaId);
+  }
+
   Future<void> atualizarFcmToken(String salaId, String token) async {
     await _supabase
         .from('salas')

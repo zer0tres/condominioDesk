@@ -3,6 +3,7 @@ class Sala {
   final String numero;
   final String? nomeEmpresa;
   final String? fcmToken;
+  final String? senha;
   final DateTime criadoEm;
 
   Sala({
@@ -10,6 +11,7 @@ class Sala {
     required this.numero,
     this.nomeEmpresa,
     this.fcmToken,
+    this.senha,
     required this.criadoEm,
   });
 
@@ -19,9 +21,11 @@ class Sala {
       numero: json['numero'],
       nomeEmpresa: json['nome_empresa'],
       fcmToken: json['fcm_token'],
+      senha: json['senha'],
       criadoEm: DateTime.parse(json['criado_em']),
     );
   }
 
   String get displayName => nomeEmpresa ?? 'Sala $numero';
+  bool get isPrimeiroAcesso => senha == 'sala$numero';
 }

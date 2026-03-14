@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'config/supabase_config.dart';
 import 'config/firebase_options.dart';
 import 'screens/portaria/login_screen.dart';
+import 'screens/portaria/portaria_home_screen.dart';
 import 'services/notification_service.dart';
 
 Future<void> main() async {
@@ -24,6 +25,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final session = Supabase.instance.client.auth.currentSession;
     return MaterialApp(
       title: 'Condominio Desk',
       debugShowCheckedModeBanner: false,
@@ -32,7 +34,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: session != null ? const PortariaHomeScreen() : const LoginScreen(),
     );
   }
 }

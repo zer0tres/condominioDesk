@@ -7,6 +7,8 @@ import '../../models/espaco_comum.dart';
 import '../../services/encomenda_service.dart';
 import '../../services/reserva_service.dart';
 import '../../services/notification_service.dart';
+import '../portaria/nova_reserva_screen.dart';
+import '../portaria/detalhe_reserva_screen.dart';
 import '../../widgets/foto_fullscreen_viewer.dart';
 
 class SalaHomeScreen extends StatefulWidget {
@@ -203,42 +205,66 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
   }
 
   Widget _buildAgenda() {
-    if (_reservas.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.event_available, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text('Nenhuma reserva para hoje',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
-          ],
-        ),
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            'Reservas de hoje — ${DateFormat("dd/MM/yyyy").format(DateTime.now())}',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        ),
-        ..._reservas.map((r) => Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: Colors.indigo,
-              child: Icon(Icons.meeting_room, color: Colors.white, size: 18)),
-            title: Text(_nomesEspacos(r.espacoIds),
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(
-              '${r.horaInicio.substring(0,5)} - ${r.horaFim.substring(0,5)} | ${r.responsavelNome}'),
+    return Scaffold(
+      body: _reservas.isEmpty
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.event_available, size: 64, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                Text('Nenhuma reserva para hoje',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+              ],
+            ))
+        : ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Reservas de hoje — \${DateFormat("dd/MM/yyyy").format(DateTime.now())}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+              ..._reservas.map((r) => Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  onTap: () async {
+                    final podeCancelar = await ReservaService().podeCancelar(r.id);
+                    if (!mounted) return;
+                    await Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => DetalheReservaScreen(
+                        reserva: r,
+                        espacos: _espacos,
+                        podeCancelar: podeCancelar,
+                        onCancelada: _carregar)));
+                  },
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.indigo,
+                    child: Icon(Icons.meeting_room, color: Colors.white, size: 18)),
+                  title: Text(_nomesEspacos(r.espacoIds),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(
+                    '\${r.horaInicio.substring(0,5)} - \${r.horaFim.substring(0,5)} | \${r.responsavelNome}'),
+                  trailing: r.salaId == widget.sala.id
+                    ? const Icon(Icons.chevron_right, color: Colors.grey)
+                    : null,
+                ),
+              )),
+            ],
           ),
-        )),
-      ],
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          await Navigator.push(context, MaterialPageRoute(
+            builder: (_) => NovaReservaScreen(
+              dataInicial: DateTime.now(),
+              salaId: widget.sala.id)));
+          _carregar();
+        },
+        backgroundColor: Colors.teal.shade900,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Nova Reserva'),
+      ),
     );
   }
 }

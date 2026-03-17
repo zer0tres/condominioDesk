@@ -5,7 +5,8 @@ import '../../services/reserva_service.dart';
 
 class NovaReservaScreen extends StatefulWidget {
   final DateTime dataInicial;
-  const NovaReservaScreen({super.key, required this.dataInicial});
+  final String? salaId;
+  const NovaReservaScreen({super.key, required this.dataInicial, this.salaId});
 
   @override
   State<NovaReservaScreen> createState() => _NovaReservaScreenState();
@@ -14,18 +15,22 @@ class NovaReservaScreen extends StatefulWidget {
 class _NovaReservaScreenState extends State<NovaReservaScreen> {
   final _nomeController = TextEditingController();
   final _pessoasController = TextEditingController();
+  final _cadeirasController = TextEditingController();
+  final _mesasController = TextEditingController();
   final _observacoesController = TextEditingController();
   final _reservaService = ReservaService();
 
   DateTime _data = DateTime.now();
   TimeOfDay _horaInicio = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay _horaFim = const TimeOfDay(hour: 10, minute: 0);
+  TimeOfDay _horaFim = const TimeOfDay(hour: 11, minute: 0);
   List<EspacoComum> _espacos = [];
   final List<String> _espacosSelecionados = [];
-  String _duracaoTipo = 'horas';
   bool _loading = false;
   bool _carregando = true;
   String? _erro;
+  Map<String, bool> _copaCoffeeOcupado = {'copa': false, 'coffee': false};
+  Map<String, int> _materialDisponivel = {'cadeiras': 115, 'mesas': 33};
+  Map<String, int> _limiteMaterial = {'cadeiras': 0, 'mesas': 0};
 
   @override
   void initState() {
@@ -37,28 +42,44 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
   Future<void> _carregarEspacos() async {
     final espacos = await _reservaService.listarEspacos();
     setState(() { _espacos = espacos; _carregando = false; });
+    _verificarDisponibilidade();
+  }
+
+  Future<void> _verificarDisponibilidade() async {
+    final copaCoffee = await _reservaService.verificarDisponibilidadeCopaCoffee(
+        _data, widget.salaId);
+    final inicio = _formatTime(_horaInicio);
+    final fim = _formatTime(_horaFim);
+    final material = await _reservaService.verificarMaterialDisponivel(
+        _data, inicio, fim);
+    setState(() {
+      _copaCoffeeOcupado = copaCoffee;
+      _materialDisponivel = material;
+    });
   }
 
   String _formatTime(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2,'0')}:${t.minute.toString().padLeft(2,'0')}:00';
 
   double _calcularValor() {
-    double total = 0;
-    for (final id in _espacosSelecionados) {
-      final espaco = _espacos.where((e) => e.id == id).firstOrNull;
-      if (espaco != null) {
-        final valorHora = ReservaService.valoresPorHora[espaco.nome] ?? 100.0;
-        if (_duracaoTipo == 'horas') {
-          final horas = _horaFim.hour - _horaInicio.hour +
-              (_horaFim.minute - _horaInicio.minute) / 60.0;
-          total += valorHora * horas.clamp(0, 24);
-        } else {
-          final dias = double.tryParse(_pessoasController.text) ?? 1;
-          total += valorHora * 8 * dias;
-        }
-      }
-    }
-    return total;
+    if (_horaInicio == _horaFim) return 0;
+    return _reservaService.calcularValor(
+      _espacosSelecionados, _espacos,
+      _formatTime(_horaInicio), _formatTime(_horaFim));
+  }
+
+  int _calcularPeriodos() {
+    final inicio = _horaInicio.hour * 60 + _horaInicio.minute;
+    final fim = _horaFim.hour * 60 + _horaFim.minute;
+    final duracao = fim - inicio;
+    if (duracao <= 0) return 0;
+    return (duracao / 120.0).ceil();
+  }
+
+  void _atualizarLimiteMaterial() {
+    final limite = _reservaService.calcularLimiteMaterial(
+        _espacosSelecionados, _espacos);
+    setState(() => _limiteMaterial = limite);
   }
 
   Future<void> _salvar() async {
@@ -77,6 +98,26 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
       return;
     }
 
+    final cadeiras = int.tryParse(_cadeirasController.text) ?? 0;
+    final mesas = int.tryParse(_mesasController.text) ?? 0;
+
+    if (_limiteMaterial['cadeiras']! > 0 && cadeiras > _limiteMaterial['cadeiras']!) {
+      setState(() => _erro = 'Maximo de ${_limiteMaterial['cadeiras']} cadeiras para as salas selecionadas.');
+      return;
+    }
+    if (_limiteMaterial['mesas']! > 0 && mesas > _limiteMaterial['mesas']!) {
+      setState(() => _erro = 'Maximo de ${_limiteMaterial['mesas']} mesas para as salas selecionadas.');
+      return;
+    }
+    if (cadeiras > _materialDisponivel['cadeiras']!) {
+      setState(() => _erro = 'Somente ${_materialDisponivel['cadeiras']} cadeiras disponiveis neste horario.');
+      return;
+    }
+    if (mesas > _materialDisponivel['mesas']!) {
+      setState(() => _erro = 'Somente ${_materialDisponivel['mesas']} mesas disponiveis neste horario.');
+      return;
+    }
+
     setState(() { _loading = true; _erro = null; });
     try {
       await _reservaService.criar(
@@ -85,14 +126,13 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
         horaInicio: inicio,
         horaFim: fim,
         responsavelNome: _nomeController.text.trim(),
+        salaId: widget.salaId,
         numPessoas: int.tryParse(_pessoasController.text),
-        duracaoTipo: _duracaoTipo,
-        duracaoValor: _duracaoTipo == 'horas'
-            ? (_horaFim.hour - _horaInicio.hour).toDouble()
-            : double.tryParse(_pessoasController.text),
         valorTotal: _calcularValor(),
         observacoes: _observacoesController.text.trim().isEmpty
             ? null : _observacoesController.text.trim(),
+        numCadeiras: cadeiras,
+        numMesas: mesas,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -108,6 +148,8 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
   }
 
   bool _podeSelecionar(EspacoComum espaco) {
+    if (espaco.nome == 'Copa' && _copaCoffeeOcupado['copa'] == true) return false;
+    if (espaco.nome == 'Coffe' && _copaCoffeeOcupado['coffee'] == true) return false;
     if (!espaco.combinavel) return true;
     final combinaveis = _espacos.where((e) => e.combinavel).toList();
     final indices = _espacosSelecionados
@@ -124,6 +166,8 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
   @override
   Widget build(BuildContext context) {
     final valorEstimado = _calcularValor();
+    final periodos = _calcularPeriodos();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nova Reserva'),
@@ -145,7 +189,10 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                       context: context, initialDate: _data,
                       firstDate: DateTime.now(),
                       lastDate: DateTime.now().add(const Duration(days: 365)));
-                    if (picked != null) setState(() => _data = picked);
+                    if (picked != null) {
+                      setState(() => _data = picked);
+                      _verificarDisponibilidade();
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -171,7 +218,10 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                         onTap: () async {
                           final t = await showTimePicker(
                             context: context, initialTime: _horaInicio);
-                          if (t != null) setState(() => _horaInicio = t);
+                          if (t != null) {
+                            setState(() => _horaInicio = t);
+                            _verificarDisponibilidade();
+                          }
                         },
                         child: Container(
                           padding: const EdgeInsets.all(16),
@@ -197,7 +247,10 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                         onTap: () async {
                           final t = await showTimePicker(
                             context: context, initialTime: _horaFim);
-                          if (t != null) setState(() => _horaFim = t);
+                          if (t != null) {
+                            setState(() => _horaFim = t);
+                            _verificarDisponibilidade();
+                          }
                         },
                         child: Container(
                           padding: const EdgeInsets.all(16),
@@ -214,12 +267,28 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                     ],
                   )),
                 ]),
+                if (periodos > 0) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8)),
+                    child: Text(
+                      'Duracao: $periodos periodo${periodos > 1 ? 's' : ''} de 2h (cobranca minima 2h)',
+                      style: TextStyle(color: Colors.blue.shade700, fontSize: 13)),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 const Text('Espacos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 ..._espacos.map((espaco) {
                   final selecionado = _espacosSelecionados.contains(espaco.id);
                   final podeSelecionar = selecionado || _podeSelecionar(espaco);
+                  final ocupado = (espaco.nome == 'Copa' && _copaCoffeeOcupado['copa'] == true) ||
+                                  (espaco.nome == 'Coffe' && _copaCoffeeOcupado['coffee'] == true);
+                  final valor = ReservaService.valoresPor2h[espaco.nome] ?? 105.0;
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: InkWell(
@@ -231,32 +300,45 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                             _espacosSelecionados.add(espaco.id);
                           }
                         });
+                        _atualizarLimiteMaterial();
                       } : null,
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: selecionado ? Colors.indigo.shade50 : Colors.white,
+                          color: ocupado ? Colors.grey.shade100 :
+                                 selecionado ? Colors.indigo.shade50 : Colors.white,
                           border: Border.all(
-                            color: selecionado ? Colors.indigo : Colors.grey.shade300,
+                            color: ocupado ? Colors.grey.shade300 :
+                                   selecionado ? Colors.indigo : Colors.grey.shade300,
                             width: selecionado ? 2 : 1),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 4)]),
+                          borderRadius: BorderRadius.circular(12)),
                         child: Row(children: [
                           Icon(
+                            ocupado ? Icons.block :
                             selecionado ? Icons.check_box : Icons.check_box_outline_blank,
-                            color: selecionado ? Colors.indigo : (podeSelecionar ? Colors.grey : Colors.grey.shade300)),
+                            color: ocupado ? Colors.grey :
+                                   selecionado ? Colors.indigo :
+                                   podeSelecionar ? Colors.grey : Colors.grey.shade300),
                           const SizedBox(width: 12),
                           Expanded(child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(espaco.nome, style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: podeSelecionar ? Colors.black : Colors.grey.shade400)),
+                                color: ocupado ? Colors.grey :
+                                       podeSelecionar ? Colors.black : Colors.grey.shade400)),
                               Row(children: [
-                                if (espaco.combinavel)
-                                  Text('Combinavel  ', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                                Text('R\$ ${ReservaService.valoresPorHora[espaco.nome]?.toStringAsFixed(0) ?? "100"}/hora',
-                                  style: const TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.bold)),
+                                if (ocupado)
+                                  Text('Ja reservado neste dia',
+                                    style: TextStyle(fontSize: 12, color: Colors.red.shade300))
+                                else if (valor == 0)
+                                  const Text('Gratuito',
+                                    style: TextStyle(fontSize: 12, color: Colors.green,
+                                        fontWeight: FontWeight.bold))
+                                else
+                                  Text('R\$ ${valor.toStringAsFixed(0)} por periodo de 2h',
+                                    style: const TextStyle(fontSize: 12, color: Colors.indigo,
+                                        fontWeight: FontWeight.bold)),
                               ]),
                             ],
                           )),
@@ -265,28 +347,52 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                     ),
                   );
                 }),
+                if (_limiteMaterial['cadeiras']! > 0) ...[
+                  const SizedBox(height: 16),
+                  const Text('Material (opcional)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Disponivel: ${_materialDisponivel["cadeiras"]} cadeiras e ${_materialDisponivel["mesas"]} mesas | Limite das salas: ${_limiteMaterial["cadeiras"]} cadeiras e ${_limiteMaterial["mesas"]} mesas',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: TextField(
+                      controller: _cadeirasController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Cadeiras',
+                        hintText: 'Max ${_limiteMaterial['cadeiras']}',
+                        prefixIcon: const Icon(Icons.chair),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    )),
+                    const SizedBox(width: 12),
+                    Expanded(child: TextField(
+                      controller: _mesasController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Mesas',
+                        hintText: 'Max ${_limiteMaterial['mesas']}',
+                        prefixIcon: const Icon(Icons.table_restaurant),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    )),
+                  ]),
+                ],
                 const SizedBox(height: 16),
-                const Text('Numero de pessoas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('Numero de pessoas',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _pessoasController,
                   keyboardType: TextInputType.number,
-                  onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
                     hintText: 'Quantas pessoas?',
                     prefixIcon: const Icon(Icons.group),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                 ),
                 const SizedBox(height: 16),
-                const Text('Tipo de duracao', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(child: _duracaoChip('horas', 'Por horas')),
-                  const SizedBox(width: 12),
-                  Expanded(child: _duracaoChip('dias', 'Por dias')),
-                ]),
-                const SizedBox(height: 16),
-                const Text('Responsavel', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('Responsavel',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _nomeController,
@@ -296,7 +402,8 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                 ),
                 const SizedBox(height: 16),
-                const Text('Observacoes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('Observacoes',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _observacoesController,
@@ -313,14 +420,21 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                       color: Colors.indigo.shade50,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.indigo.shade200)),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
                       children: [
-                        const Text('Valor estimado:',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('R\$ ${valorEstimado.toStringAsFixed(2)}',
-                          style: TextStyle(fontWeight: FontWeight.bold,
-                            fontSize: 20, color: Colors.indigo.shade900)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Valor total:',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text('R\$ ${valorEstimado.toStringAsFixed(2)}',
+                              style: TextStyle(fontWeight: FontWeight.bold,
+                                fontSize: 20, color: Colors.indigo.shade900)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('$periodos periodo${periodos > 1 ? 's' : ''} x R\$ ${(valorEstimado / periodos).toStringAsFixed(2)}/periodo',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -336,7 +450,8 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                     child: Row(children: [
                       const Icon(Icons.error_outline, color: Colors.red),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(_erro!, style: const TextStyle(color: Colors.red))),
+                      Expanded(child: Text(_erro!,
+                        style: const TextStyle(color: Colors.red))),
                     ]),
                   ),
                 ],
@@ -349,37 +464,22 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.indigo.shade900,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12))),
                     icon: _loading
                       ? const SizedBox(width: 20, height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2))
                       : const Icon(Icons.save),
                     label: Text(_loading ? 'Salvando...' : 'Confirmar Reserva',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(height: 32),
               ],
             ),
           ),
-    );
-  }
-
-  Widget _duracaoChip(String valor, String label) {
-    final selecionado = _duracaoTipo == valor;
-    return GestureDetector(
-      onTap: () => setState(() => _duracaoTipo = valor),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: selecionado ? Colors.indigo.shade900 : Colors.white,
-          border: Border.all(color: Colors.indigo.shade900),
-          borderRadius: BorderRadius.circular(12)),
-        child: Text(label, textAlign: TextAlign.center,
-          style: TextStyle(
-            color: selecionado ? Colors.white : Colors.indigo.shade900,
-            fontWeight: FontWeight.bold)),
-      ),
     );
   }
 }

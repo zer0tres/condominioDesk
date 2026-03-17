@@ -8,12 +8,14 @@ class DetalheReservaScreen extends StatelessWidget {
   final Reserva reserva;
   final List<EspacoComum> espacos;
   final VoidCallback onCancelada;
+  final bool podeCancelar;
 
   const DetalheReservaScreen({
     super.key,
     required this.reserva,
     required this.espacos,
     required this.onCancelada,
+    this.podeCancelar = true,
   });
 
   String _nomesEspacos(List<String> ids) {
@@ -32,8 +34,9 @@ class DetalheReservaScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
+            icon: Icon(Icons.delete_outline,
+              color: podeCancelar ? null : Colors.grey),
+            onPressed: !podeCancelar ? null : () async {
               final confirma = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
@@ -83,7 +86,24 @@ class DetalheReservaScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            if (!podeCancelar) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200)),
+              child: Row(children: [
+                const Icon(Icons.warning_amber, color: Colors.orange),
+                const SizedBox(width: 8),
+                const Expanded(child: Text(
+                  'Cancelamento indisponivel. Prazo de 48h antes do evento ja encerrou.',
+                  style: TextStyle(color: Colors.orange, fontSize: 13))),
+              ]),
+            ),
+          ],
+          const SizedBox(height: 24),
             _infoRow(Icons.access_time, 'Horario',
               '${reserva.horaInicio.substring(0,5)} ate ${reserva.horaFim.substring(0,5)}'),
             _infoRow(Icons.person, 'Responsavel', reserva.responsavelNome),

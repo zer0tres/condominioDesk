@@ -11,6 +11,8 @@ class Reserva {
   final double? duracaoValor;
   final double? valorTotal;
   final String? observacoes;
+  final int? numCadeiras;
+  final int? numMesas;
   final DateTime criadoEm;
 
   Reserva({
@@ -26,6 +28,8 @@ class Reserva {
     this.duracaoValor,
     this.valorTotal,
     this.observacoes,
+    this.numCadeiras,
+    this.numMesas,
     required this.criadoEm,
   });
 
@@ -45,6 +49,8 @@ class Reserva {
       valorTotal: json['valor_total'] != null
           ? double.parse(json['valor_total'].toString()) : null,
       observacoes: json['observacoes'],
+      numCadeiras: json['num_cadeiras'],
+      numMesas: json['num_mesas'],
       criadoEm: DateTime.parse(json['criado_em']),
     );
   }

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/encomenda.dart';
-import '../../models/sala.dart';
 import '../../services/encomenda_service.dart';
-import '../../services/sala_service.dart';
 import 'registrar_encomenda_screen.dart';
 import 'detalhe_encomenda_screen.dart';
 
@@ -16,12 +14,8 @@ class EncomendasScreen extends StatefulWidget {
 
 class _EncomendasScreenState extends State<EncomendasScreen> {
   final _encomendaService = EncomendaService();
-  final _salaService = SalaService();
-  final _buscaController = TextEditingController();
-
   List<Encomenda> _encomendas = [];
   List<Encomenda> _encomendasFiltradas = [];
-  List<Sala> _resultadosBusca = [];
   bool _loading = true;
   String _filtro = 'pendente';
   final _buscaEncomendaController = TextEditingController();
@@ -36,7 +30,11 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
     setState(() => _loading = true);
     try {
       final lista = await _encomendaService.listarPendentes();
-      setState(() { _encomendas = lista; _encomendasFiltradas = lista; _buscaEncomendaController.clear(); });
+      setState(() {
+        _encomendas = lista;
+        _encomendasFiltradas = lista;
+        _buscaEncomendaController.clear();
+      });
     } finally {
       setState(() => _loading = false);
     }
@@ -53,23 +51,6 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
         (e.retiradoPor?.toLowerCase().contains(t) ?? false)
       ).toList();
     });
-  }
-
-  Future<void> _buscarSala(String termo) async {
-    if (termo.isEmpty) {
-      setState(() => _resultadosBusca = []);
-      return;
-    }
-    try {
-      List<Sala> resultados;
-      if (int.tryParse(termo) != null) {
-        final sala = await _salaService.buscarPorNumero(termo);
-        resultados = sala != null ? [sala] : [];
-      } else {
-        resultados = await _salaService.buscarPorNome(termo);
-      }
-      setState(() => _resultadosBusca = resultados);
-    } catch (_) {}
   }
 
   Future<void> _marcarRetirada(Encomenda encomenda) async {
@@ -103,16 +84,19 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
               Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Confirmar', style: TextStyle(color: Colors.white))),
+            child: const Text('Confirmar',
+              style: TextStyle(color: Colors.white))),
         ],
       ),
     );
     if (confirma == true && nomeController.text.trim().isNotEmpty) {
-      await _encomendaService.marcarRetirada(encomenda.id, nomeController.text.trim());
+      await _encomendaService.marcarRetirada(
+        encomenda.id, nomeController.text.trim());
       _carregarEncomendas();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Encomenda marcada como retirada!'),
+          const SnackBar(
+            content: Text('Encomenda marcada como retirada!'),
             backgroundColor: Colors.green));
       }
     }
@@ -129,28 +113,6 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
             child: Column(
               children: [
                 TextField(
-                  controller: _buscaController,
-                  onChanged: _buscarSala,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar sala por numero ou empresa...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _buscaController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _buscaController.clear();
-                            setState(() => _resultadosBusca = []);
-                          })
-                      : null,
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
                   controller: _buscaEncomendaController,
                   onChanged: _filtrarEncomendas,
                   decoration: InputDecoration(
@@ -159,7 +121,10 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
                     suffixIcon: _buscaEncomendaController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear),
-                          onPressed: () { _buscaEncomendaController.clear(); _filtrarEncomendas(''); })
+                          onPressed: () {
+                            _buscaEncomendaController.clear();
+                            _filtrarEncomendas('');
+                          })
                       : null,
                     filled: true,
                     fillColor: Colors.white,
@@ -179,40 +144,10 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
               ],
             ),
           ),
-          if (_resultadosBusca.isNotEmpty)
-            Container(
-              color: Colors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    child: Text('Salas encontradas:',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                  ),
-                  ..._resultadosBusca.map((sala) => ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.indigo,
-                      child: Icon(Icons.meeting_room, color: Colors.white, size: 18)),
-                    title: Text(sala.displayName),
-                    subtitle: Text('Sala ${sala.numero}'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                    onTap: () async {
-                      _buscaController.clear();
-                      setState(() => _resultadosBusca = []);
-                      await Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => RegistrarEncomendaScreen(sala: sala)));
-                      _carregarEncomendas();
-                    },
-                  )),
-                  const Divider(height: 1),
-                ],
-              ),
-            ),
           Expanded(
             child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : _encomendas.isEmpty
+              : _encomendasFiltradas.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -224,7 +159,8 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
                           _filtro == 'pendente'
                             ? 'Nenhuma encomenda pendente'
                             : 'Nenhuma encomenda retirada',
-                          style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                          style: TextStyle(
+                            color: Colors.grey.shade500, fontSize: 16)),
                       ],
                     ))
                 : RefreshIndicator(
@@ -241,40 +177,52 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
                               await Navigator.push(context, MaterialPageRoute(
                                 builder: (_) => DetalheEncomendaScreen(
                                   encomenda: e,
-                                  nomeEmpresa: 'Sala ${e.salaId}')));
+                                  nomeEmpresa: e.salaDisplay)));
                               _carregarEncomendas();
                             },
                             leading: CircleAvatar(
-                              backgroundColor: e.isPendente ? Colors.orange : Colors.green,
+                              backgroundColor: e.isPendente
+                                ? Colors.orange : Colors.green,
                               child: Icon(
-                                e.isPendente ? Icons.inventory_2 : Icons.check_circle,
+                                e.isPendente
+                                  ? Icons.inventory_2 : Icons.check_circle,
                                 color: Colors.white, size: 18)),
                             title: Text(e.nomeDestinatario,
                               style: const TextStyle(fontWeight: FontWeight.bold)),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Text(e.salaDisplay,
+                                  style: const TextStyle(
+                                    fontSize: 11, color: Colors.indigo,
+                                    fontWeight: FontWeight.bold)),
                                 Text(e.codigoRastreio ?? 'Sem codigo'),
                                 Text(DateFormat('dd/MM HH:mm').format(e.criadoEm),
-                                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                  style: const TextStyle(
+                                    fontSize: 11, color: Colors.grey)),
                               ],
                             ),
+                            isThreeLine: true,
                             trailing: e.isPendente
                               ? ElevatedButton(
                                   onPressed: () => _marcarRetirada(e),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8)),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8)),
                                   child: const Text('Retirada',
-                                    style: TextStyle(color: Colors.white, fontSize: 12)))
+                                    style: TextStyle(
+                                      color: Colors.white, fontSize: 12)))
                               : Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                    const Icon(Icons.check_circle,
+                                      color: Colors.green, size: 18),
                                     if (e.retiradoPor != null)
                                       Text(e.retiradoPor!,
-                                        style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                        style: const TextStyle(
+                                          fontSize: 10, color: Colors.grey)),
                                   ],
                                 ),
                           ),
@@ -310,7 +258,11 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
           } else {
             lista = await _encomendaService.listarRetiradas();
           }
-          setState(() { _encomendas = lista; _encomendasFiltradas = lista; _buscaEncomendaController.clear(); });
+          setState(() {
+            _encomendas = lista;
+            _encomendasFiltradas = lista;
+            _buscaEncomendaController.clear();
+          });
         } finally {
           setState(() => _loading = false);
         }

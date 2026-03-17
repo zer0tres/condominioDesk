@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/espaco_comum.dart';
 import '../../services/reserva_service.dart';
+import '../../services/sala_service.dart';
+import '../../models/sala.dart';
 
 class NovaReservaScreen extends StatefulWidget {
   final DateTime dataInicial;
@@ -19,6 +21,11 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
   final _mesasController = TextEditingController();
   final _observacoesController = TextEditingController();
   final _reservaService = ReservaService();
+  final _salaService = SalaService();
+  final _buscaSalaController = TextEditingController();
+  Sala? _salaSelecionada;
+  List<Sala> _resultadosSala = [];
+  bool _buscandoSala = false;
 
   DateTime _data = DateTime.now();
   TimeOfDay _horaInicio = const TimeOfDay(hour: 9, minute: 0);
@@ -37,6 +44,23 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
     super.initState();
     _data = widget.dataInicial;
     _carregarEspacos();
+  }
+
+  Future<void> _buscarSala(String termo) async {
+    if (termo.isEmpty) { setState(() => _resultadosSala = []); return; }
+    setState(() => _buscandoSala = true);
+    try {
+      List<Sala> r;
+      if (int.tryParse(termo) != null || termo.toUpperCase() == 'ADM') {
+        final s = await _salaService.buscarPorNumero(termo.toUpperCase());
+        r = s != null ? [s] : [];
+      } else {
+        r = await _salaService.buscarPorNome(termo);
+      }
+      setState(() => _resultadosSala = r);
+    } finally {
+      setState(() => _buscandoSala = false);
+    }
   }
 
   Future<void> _carregarEspacos() async {
@@ -126,7 +150,7 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
         horaInicio: inicio,
         horaFim: fim,
         responsavelNome: _nomeController.text.trim(),
-        salaId: widget.salaId,
+        salaId: widget.salaId ?? _salaSelecionada?.id,
         numPessoas: int.tryParse(_pessoasController.text),
         valorTotal: _calcularValor(),
         observacoes: _observacoesController.text.trim().isEmpty
@@ -391,6 +415,62 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                 ),
                 const SizedBox(height: 16),
+                if (widget.salaId == null) ...[
+                  const Text('Sala do Condômino (opcional)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _buscaSalaController,
+                    onChanged: (v) {
+                      if (_salaSelecionada != null) setState(() => _salaSelecionada = null);
+                      _buscarSala(v);
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Numero ou nome da sala...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _buscandoSala
+                        ? const Padding(padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : null,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                  if (_resultadosSala.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12)),
+                      child: Column(
+                        children: _resultadosSala.map((sala) => ListTile(
+                          title: Text(sala.displayName),
+                          subtitle: Text('Sala \${sala.numero}'),
+                          onTap: () => setState(() {
+                            _salaSelecionada = sala;
+                            _buscaSalaController.text = '\${sala.numero} — \${sala.displayName}';
+                            _resultadosSala = [];
+                          }),
+                        )).toList(),
+                      ),
+                    ),
+                  ],
+                  if (_salaSelecionada != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.shade50,
+                        borderRadius: BorderRadius.circular(12)),
+                      child: Row(children: [
+                        const Icon(Icons.check_circle, color: Colors.indigo),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(
+                          'Sala \${_salaSelecionada!.numero} — \${_salaSelecionada!.displayName}',
+                          style: const TextStyle(fontWeight: FontWeight.bold))),
+                      ]),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                ],
                 const Text('Responsavel',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),

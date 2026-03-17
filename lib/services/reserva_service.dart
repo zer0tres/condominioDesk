@@ -151,7 +151,11 @@ class ReservaService {
         maxMesas += limite['mesas_max']!;
       }
     }
-    return {'cadeiras': maxCadeiras, 'mesas': maxMesas};
+    // Nunca pode ultrapassar o total do prédio
+    return {
+      'cadeiras': maxCadeiras > totalCadeiras ? totalCadeiras : maxCadeiras,
+      'mesas': maxMesas > totalMesas ? totalMesas : maxMesas,
+    };
   }
 
   Future<bool> verificarConflito({

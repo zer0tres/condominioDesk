@@ -20,9 +20,11 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
   final _buscaController = TextEditingController();
 
   List<Encomenda> _encomendas = [];
+  List<Encomenda> _encomendasFiltradas = [];
   List<Sala> _resultadosBusca = [];
   bool _loading = true;
   String _filtro = 'pendente';
+  final _buscaEncomendaController = TextEditingController();
 
   @override
   void initState() {
@@ -34,10 +36,23 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
     setState(() => _loading = true);
     try {
       final lista = await _encomendaService.listarPendentes();
-      setState(() => _encomendas = lista);
+      setState(() { _encomendas = lista; _encomendasFiltradas = lista; _buscaEncomendaController.clear(); });
     } finally {
       setState(() => _loading = false);
     }
+  }
+
+  void _filtrarEncomendas(String termo) {
+    final t = termo.toLowerCase();
+    setState(() {
+      _encomendasFiltradas = t.isEmpty ? _encomendas : _encomendas.where((e) =>
+        e.nomeDestinatario.toLowerCase().contains(t) ||
+        (e.codigoRastreio?.toLowerCase().contains(t) ?? false) ||
+        (e.salaNumero?.contains(t) ?? false) ||
+        (e.salaNomeEmpresa?.toLowerCase().contains(t) ?? false) ||
+        (e.retiradoPor?.toLowerCase().contains(t) ?? false)
+      ).toList();
+    });
   }
 
   Future<void> _buscarSala(String termo) async {
@@ -135,6 +150,25 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                TextField(
+                  controller: _buscaEncomendaController,
+                  onChanged: _filtrarEncomendas,
+                  decoration: InputDecoration(
+                    hintText: 'Filtrar encomendas...',
+                    prefixIcon: const Icon(Icons.filter_list),
+                    suffixIcon: _buscaEncomendaController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () { _buscaEncomendaController.clear(); _filtrarEncomendas(''); })
+                      : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     _filtroChip('pendente', 'Pendentes', Colors.orange),
@@ -197,9 +231,9 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
                     onRefresh: _carregarEncomendas,
                     child: ListView.builder(
                       padding: const EdgeInsets.all(12),
-                      itemCount: _encomendas.length,
+                      itemCount: _encomendasFiltradas.length,
                       itemBuilder: (_, i) {
-                        final e = _encomendas[i];
+                        final e = _encomendasFiltradas[i];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
@@ -276,7 +310,7 @@ class _EncomendasScreenState extends State<EncomendasScreen> {
           } else {
             lista = await _encomendaService.listarRetiradas();
           }
-          setState(() => _encomendas = lista);
+          setState(() { _encomendas = lista; _encomendasFiltradas = lista; _buscaEncomendaController.clear(); });
         } finally {
           setState(() => _loading = false);
         }

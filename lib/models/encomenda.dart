@@ -9,6 +9,8 @@ class Encomenda {
   final DateTime criadoEm;
   final DateTime? retiradoEm;
   final String? retiradoPor;
+  final String? salaNumero;
+  final String? salaNomeEmpresa;
 
   Encomenda({
     required this.id,
@@ -21,6 +23,8 @@ class Encomenda {
     required this.criadoEm,
     this.retiradoEm,
     this.retiradoPor,
+    this.salaNumero,
+    this.salaNomeEmpresa,
   });
 
   factory Encomenda.fromJson(Map<String, dynamic> json) {
@@ -39,7 +43,15 @@ class Encomenda {
           ? DateTime.parse(json['retirado_em'])
           : null,
       retiradoPor: json['retirado_por'],
+      salaNumero: json['salas']?['numero'],
+      salaNomeEmpresa: json['salas']?['nome_empresa'],
     );
+  }
+
+  String get salaDisplay {
+    if (salaNomeEmpresa != null) return 'Sala $salaNumero — $salaNomeEmpresa';
+    if (salaNumero != null) return 'Sala $salaNumero';
+    return 'Sala desconhecida';
   }
 
   bool get isPendente => status == 'pendente';

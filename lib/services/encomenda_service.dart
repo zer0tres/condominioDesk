@@ -17,7 +17,7 @@ class EncomendaService {
   Future<List<Encomenda>> listarRetiradas() async {
     final response = await _supabase
         .from('encomendas')
-        .select()
+        .select('*, salas(numero, nome_empresa)')
         .eq('status', 'retirada')
         .order('retirado_em', ascending: false)
         .limit(50);
@@ -27,7 +27,7 @@ class EncomendaService {
   Future<List<Encomenda>> listarPendentes() async {
     final response = await _supabase
         .from('encomendas')
-        .select()
+        .select('*, salas(numero, nome_empresa)')
         .eq('status', 'pendente')
         .order('criado_em', ascending: false);
     return response.map((e) => Encomenda.fromJson(e)).toList();

@@ -117,6 +117,11 @@ class DetalheReservaScreen extends StatelessWidget {
                 'R\$ ${reserva.valorTotal!.toStringAsFixed(2)}'),
             if (reserva.observacoes != null && reserva.observacoes!.isNotEmpty)
               _infoRow(Icons.notes, 'Observacoes', reserva.observacoes!),
+            if (reserva.salaNumero != null)
+              _infoRow(Icons.meeting_room, 'Solicitado por',
+                reserva.salaNomeEmpresa != null
+                  ? 'Sala \${reserva.salaNumero} — \${reserva.salaNomeEmpresa}'
+                  : 'Sala \${reserva.salaNumero}'),
             if (reserva.salaId != null)
               _infoRow(Icons.meeting_room, 'Solicitado por', 'Sala ${reserva.salaId}'),
           ],

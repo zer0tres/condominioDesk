@@ -13,6 +13,8 @@ class Reserva {
   final String? observacoes;
   final int? numCadeiras;
   final int? numMesas;
+  final String? salaNumero;
+  final String? salaNomeEmpresa;
   final DateTime criadoEm;
 
   Reserva({
@@ -30,6 +32,9 @@ class Reserva {
     this.observacoes,
     this.numCadeiras,
     this.numMesas,
+    // NOVOS CAMPOS
+    this.salaNumero,
+    this.salaNomeEmpresa,
     required this.criadoEm,
   });
 
@@ -51,6 +56,9 @@ class Reserva {
       observacoes: json['observacoes'],
       numCadeiras: json['num_cadeiras'],
       numMesas: json['num_mesas'],
+      // NOVOS CAMPOS - extraindo do relacionamento com a tabela salas
+      salaNumero: json['salas'] != null ? json['salas']['numero'] : null,
+      salaNomeEmpresa: json['salas'] != null ? json['salas']['nome_empresa'] : null,
       criadoEm: DateTime.parse(json['criado_em']),
     );
   }

@@ -223,7 +223,7 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
+                child: const Text(
                   'Proximas reservas desta sala',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
               ..._reservas.map((r) => Card(
@@ -245,7 +245,7 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
                   title: Text(_nomesEspacos(r.espacoIds),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text(
-                    '\${r.horaInicio.substring(0,5)} - \${r.horaFim.substring(0,5)} | \${r.responsavelNome}'),
+                    '${r.horaInicio.substring(0,5)} - ${r.horaFim.substring(0,5)} | ${r.responsavelNome}'),
                   trailing: r.salaId == widget.sala.id
                     ? const Icon(Icons.chevron_right, color: Colors.grey)
                     : null,

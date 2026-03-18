@@ -37,7 +37,7 @@ class ReservaService {
     final hoje = DateTime.now().toIso8601String().split('T')[0];
     final response = await _supabase
         .from('reservas')
-        .select()
+        .select('*, salas(numero, nome_empresa)')
         .gte('data', hoje)
         .order('data')
         .order('hora_inicio');

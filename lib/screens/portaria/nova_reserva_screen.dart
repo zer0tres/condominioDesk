@@ -443,7 +443,7 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                       child: Column(
                         children: _resultadosSala.map((sala) => ListTile(
                           title: Text(sala.displayName),
-                          subtitle: Text('Sala \${sala.numero}'),
+                          subtitle: const Text('Sala \${sala.numero}'),
                           onTap: () => setState(() {
                             _salaSelecionada = sala;
                             _buscaSalaController.text = '\${sala.numero} — \${sala.displayName}';
@@ -463,7 +463,7 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                       child: Row(children: [
                         const Icon(Icons.check_circle, color: Colors.indigo),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(
+                        Expanded(child: const Text(
                           'Sala \${_salaSelecionada!.numero} — \${_salaSelecionada!.displayName}',
                           style: const TextStyle(fontWeight: FontWeight.bold))),
                       ]),

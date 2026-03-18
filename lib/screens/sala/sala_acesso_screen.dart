@@ -108,10 +108,13 @@ class _SalaAcessoScreenState extends State<SalaAcessoScreen> {
                   return;
                 }
                 await _salaService.atualizarSenha(sala.id, nova);
+                // Recarrega sala com senha atualizada
+                final salaAtualizada = await _salaService.buscarPorNumero(sala.numero);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (mounted) {
                   Navigator.pushReplacement(context,
-                    MaterialPageRoute(builder: (_) => SalaHomeScreen(sala: sala)));
+                    MaterialPageRoute(builder: (_) => SalaHomeScreen(
+                      sala: salaAtualizada ?? sala)));
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.teal.shade900),

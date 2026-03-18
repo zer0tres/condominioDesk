@@ -40,7 +40,8 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
     try {
       final encomendas = await _encomendaService.listarPorSala(widget.sala.id);
       final espacos = await _reservaService.listarEspacos();
-      final reservas = await _reservaService.listarPorData(DateTime.now());
+      final todasReservas = await _reservaService.listarProximas();
+      final reservas = todasReservas.where((r) => r.salaId == widget.sala.id).toList();
       setState(() {
         _encomendas = encomendas;
         _espacos = espacos;
@@ -213,7 +214,7 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
               children: [
                 Icon(Icons.event_available, size: 64, color: Colors.grey.shade300),
                 const SizedBox(height: 16),
-                Text('Nenhuma reserva para hoje',
+                Text('Nenhuma reserva futura encontrada',
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
               ],
             ))
@@ -223,7 +224,7 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  'Reservas de hoje — \${DateFormat("dd/MM/yyyy").format(DateTime.now())}',
+                  'Proximas reservas desta sala',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
               ..._reservas.map((r) => Card(
                 margin: const EdgeInsets.only(bottom: 8),

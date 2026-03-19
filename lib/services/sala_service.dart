@@ -4,6 +4,16 @@ import '../models/sala.dart';
 class SalaService {
   final _supabase = Supabase.instance.client;
 
+  Future<Sala?> buscarPorId(String id) async {
+    final response = await _supabase
+        .from('salas')
+        .select()
+        .eq('id', id)
+        .maybeSingle();
+    if (response == null) return null;
+    return Sala.fromJson(response);
+  }
+
   Future<Sala?> buscarPorNumero(String numero) async {
     final response = await _supabase
         .from('salas')

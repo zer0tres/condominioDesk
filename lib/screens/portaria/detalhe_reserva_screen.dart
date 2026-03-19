@@ -3,8 +3,9 @@ import 'package:intl/intl.dart';
 import '../../models/reserva.dart';
 import '../../models/espaco_comum.dart';
 import '../../services/reserva_service.dart';
+import '../../services/sala_service.dart';
 
-class DetalheReservaScreen extends StatelessWidget {
+class DetalheReservaScreen extends StatefulWidget {
   final Reserva reserva;
   final List<EspacoComum> espacos;
   final VoidCallback onCancelada;
@@ -18,15 +19,43 @@ class DetalheReservaScreen extends StatelessWidget {
     this.podeCancelar = true,
   });
 
+  @override
+  State<DetalheReservaScreen> createState() => _DetalheReservaScreenState();
+}
+
+class _DetalheReservaScreenState extends State<DetalheReservaScreen> {
+  String? _nomesSala;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarSala();
+  }
+
+  Future<void> _carregarSala() async {
+    if (widget.reserva.salaId == null) return;
+    final sala = await SalaService().buscarPorId(widget.reserva.salaId!);
+    if (sala != null && mounted) {
+      setState(() {
+        _nomesSala = sala.nomeEmpresa != null
+            ? 'Sala \${sala.numero} — \${sala.nomeEmpresa}'
+            : 'Sala \${sala.numero}';
+      });
+    }
+  }
+
   String _nomesEspacos(List<String> ids) {
     return ids.map((id) {
-      final e = espacos.where((e) => e.id == id).firstOrNull;
+      final e = widget.espacos.where((e) => e.id == id).firstOrNull;
       return e?.nome ?? id;
     }).join(' + ');
   }
 
   @override
   Widget build(BuildContext context) {
+    final reserva = widget.reserva;
+    final podeCancelar = widget.podeCancelar;
+    final onCancelada = widget.onCancelada;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detalhes da Reserva'),
@@ -117,13 +146,8 @@ class DetalheReservaScreen extends StatelessWidget {
                 'R\$ ${reserva.valorTotal!.toStringAsFixed(2)}'),
             if (reserva.observacoes != null && reserva.observacoes!.isNotEmpty)
               _infoRow(Icons.notes, 'Observacoes', reserva.observacoes!),
-            if (reserva.salaNumero != null)
-              _infoRow(Icons.meeting_room, 'Solicitado por',
-                reserva.salaNomeEmpresa != null
-                  ? 'Sala \${reserva.salaNumero} — \${reserva.salaNomeEmpresa}'
-                  : 'Sala \${reserva.salaNumero}'),
-            if (reserva.salaId != null)
-              _infoRow(Icons.meeting_room, 'Solicitado por', 'Sala ${reserva.salaId}'),
+            if (reserva.salaId != null && _nomesSala != null)
+              _infoRow(Icons.meeting_room, 'Solicitado por', _nomesSala!),
           ],
         ),
       ),

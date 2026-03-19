@@ -146,11 +146,11 @@ class _SalaAcessoScreenState extends State<SalaAcessoScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.meeting_room, size: 80, color: Colors.white),
-              const SizedBox(height: 16),
-              const Text('Acesso da Sala',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold,
-                    color: Colors.white)),
+              Image.asset('assets/nov.png', height: 120),
+              const SizedBox(height: 8),
+              const Text('Cabral Corporate & Offices',
+                style: TextStyle(fontSize: 13, color: Colors.white54,
+                    letterSpacing: 2)),
               const SizedBox(height: 8),
               const Text('Digite o numero e senha da sua sala',
                 style: TextStyle(fontSize: 16, color: Colors.white70)),

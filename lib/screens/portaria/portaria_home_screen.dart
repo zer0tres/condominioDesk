@@ -15,11 +15,11 @@ class PortariaHomeScreen extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Colors.indigo.shade900,
           foregroundColor: Colors.white,
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.business, size: 24),
-              SizedBox(width: 8),
-              Text('AR3000', style: TextStyle(fontWeight: FontWeight.bold)),
+              Image.asset('assets/nov.png', height: 32),
+              const SizedBox(width: 8),
+              const Text('AR3000', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           actions: [

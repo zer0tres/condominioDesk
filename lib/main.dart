@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
     return MaterialApp(
-      title: 'Condominio Desk',
+      title: 'AR3000',
       debugShowCheckedModeBanner: false,
       locale: const Locale('pt', 'BR'),
       theme: ThemeData(

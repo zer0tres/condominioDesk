@@ -19,7 +19,7 @@ class PortariaHomeScreen extends StatelessWidget {
             children: [
               Icon(Icons.business, size: 24),
               SizedBox(width: 8),
-              Text('Condomínio Desk', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('AR3000', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
           actions: [

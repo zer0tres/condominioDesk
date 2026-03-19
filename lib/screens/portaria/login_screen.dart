@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const Icon(Icons.business, size: 80, color: Colors.white),
               const SizedBox(height: 16),
-              const Text('Condomínio Desk',
+              const Text('AR3000',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold,
                     color: Colors.white)),
               const SizedBox(height: 8),

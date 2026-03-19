@@ -443,10 +443,10 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                       child: Column(
                         children: _resultadosSala.map((sala) => ListTile(
                           title: Text(sala.displayName),
-                          subtitle: const Text('Sala \${sala.numero}'),
+                          subtitle: Text('Sala ${sala.numero}'),
                           onTap: () => setState(() {
                             _salaSelecionada = sala;
-                            _buscaSalaController.text = '\${sala.numero} — \${sala.displayName}';
+                            _buscaSalaController.text = '${sala.numero} — ${sala.displayName}';
                             _resultadosSala = [];
                           }),
                         )).toList(),

@@ -27,10 +27,15 @@ class _SalaAcessoScreenState extends State<SalaAcessoScreen> {
       return;
     }
 
+    // Aceita 000 (ADM) ou salas de 401 a 2510
     final n = int.tryParse(numero);
-    final andar = n != null ? n ~/ 100 : 0;
-    final salaNum = n != null ? n % 100 : 0;
-    if (n == null || andar < 4 || andar > 25 || salaNum < 1 || salaNum > 10) {
+    bool numeroValido = numero == '000';
+    if (!numeroValido && n != null) {
+      final andar = n ~/ 100;
+      final salaNum = n % 100;
+      numeroValido = andar >= 4 && andar <= 25 && salaNum >= 1 && salaNum <= 10;
+    }
+    if (!numeroValido) {
       setState(() => _erro = 'Numero de sala invalido.');
       return;
     }

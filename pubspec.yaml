@@ -28,7 +28,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/nov.png"
+  image_path: "assets/logo app.jpg"
   min_sdk_android: 21
 
 flutter:
@@ -36,5 +36,6 @@ flutter:
 
   assets:
     - assets/nov.png
+    - assets/logo app.jpg
 dependency_overrides:
   app_links: 6.4.1

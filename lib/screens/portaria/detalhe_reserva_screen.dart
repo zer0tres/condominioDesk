@@ -38,8 +38,8 @@ class _DetalheReservaScreenState extends State<DetalheReservaScreen> {
     if (sala != null && mounted) {
       setState(() {
         _nomesSala = sala.nomeEmpresa != null
-            ? 'Sala \${sala.numero} — \${sala.nomeEmpresa}'
-            : 'Sala \${sala.numero}';
+            ? 'Sala ${sala.numero} — ${sala.nomeEmpresa}'
+            : 'Sala ${sala.numero}';
       });
     }
   }

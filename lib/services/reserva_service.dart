@@ -12,7 +12,7 @@ class ReservaService {
     'Sala 3': 150.0,
     'Sala de Reunioes': 105.0,
     'Copa': 50.0,
-    'Coffe': 0.0,
+    'Coffee': 0.0,
   };
 
   // Limites de material por sala
@@ -66,8 +66,16 @@ class ReservaService {
     for (final id in espacoIds) {
       final espaco = espacos.where((e) => e.id == id).firstOrNull;
       if (espaco != null) {
-        final valor = valoresPor2h[espaco.nome] ?? 105.0;
-        total += valor * periodos;
+        // Copa: valor fixo R\$50 independente dos periodos
+        // Coffee: gratuito
+        if (espaco.nome == 'Copa') {
+          total += 50.0;
+        } else if (espaco.nome == 'Coffee') {
+          total += 0.0;
+        } else {
+          final valor = valoresPor2h[espaco.nome] ?? 105.0;
+          total += valor * periodos;
+        }
       }
     }
     return total;
@@ -78,7 +86,7 @@ class ReservaService {
     return int.parse(parts[0]) * 60 + int.parse(parts[1]);
   }
 
-  // Verifica se Copa/Coffe já foi reservada no dia por outro condômino
+  // Verifica se Copa/Coffee já foi reservada no dia por outro condômino
   Future<Map<String, bool>> verificarDisponibilidadeCopaCoffee(
       DateTime data, String? salaIdAtual) async {
     final dataStr = data.toIso8601String().split('T')[0];
@@ -89,10 +97,10 @@ class ReservaService {
 
     final reservasDia = response as List;
 
-    // Busca IDs de Copa e Coffe
+    // Busca IDs de Copa e Coffee
     final espacos = await listarEspacos();
     final copaId = espacos.where((e) => e.nome == 'Copa').firstOrNull?.id;
-    final coffeeId = espacos.where((e) => e.nome == 'Coffe').firstOrNull?.id;
+    final coffeeId = espacos.where((e) => e.nome == 'Coffee').firstOrNull?.id;
 
     bool copaOcupada = false;
     bool coffeeOcupado = false;

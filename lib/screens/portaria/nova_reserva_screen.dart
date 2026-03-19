@@ -173,7 +173,7 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
 
   bool _podeSelecionar(EspacoComum espaco) {
     if (espaco.nome == 'Copa' && _copaCoffeeOcupado['copa'] == true) return false;
-    if (espaco.nome == 'Coffe' && _copaCoffeeOcupado['coffee'] == true) return false;
+    if (espaco.nome == 'Coffee' && _copaCoffeeOcupado['coffee'] == true) return false;
     if (!espaco.combinavel) return true;
     final combinaveis = _espacos.where((e) => e.combinavel).toList();
     final indices = _espacosSelecionados
@@ -310,7 +310,7 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                   final selecionado = _espacosSelecionados.contains(espaco.id);
                   final podeSelecionar = selecionado || _podeSelecionar(espaco);
                   final ocupado = (espaco.nome == 'Copa' && _copaCoffeeOcupado['copa'] == true) ||
-                                  (espaco.nome == 'Coffe' && _copaCoffeeOcupado['coffee'] == true);
+                                  (espaco.nome == 'Coffee' && _copaCoffeeOcupado['coffee'] == true);
                   final valor = ReservaService.valoresPor2h[espaco.nome] ?? 105.0;
 
                   return Padding(

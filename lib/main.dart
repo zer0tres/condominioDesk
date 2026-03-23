@@ -1,3 +1,4 @@
+import 'services/reserva_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -17,6 +18,7 @@ Future<void> main() async {
   );
   await NotificationService.init();
   await initializeDateFormatting('pt_BR', null);
+  await ReservaService.carregarConfiguracoes();
   runApp(const MyApp());
 }
 

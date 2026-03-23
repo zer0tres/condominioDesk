@@ -464,7 +464,7 @@ class _NovaReservaScreenState extends State<NovaReservaScreen> {
                         const Icon(Icons.check_circle, color: Colors.indigo),
                         const SizedBox(width: 8),
                         Expanded(child: const Text(
-                          'Sala \${_salaSelecionada!.numero} — \${_salaSelecionada!.displayName}',
+                          'Sala ${_salaSelecionada!.numero} — ${_salaSelecionada!.displayName}',
                           style: const TextStyle(fontWeight: FontWeight.bold))),
                       ]),
                     ),

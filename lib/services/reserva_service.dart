@@ -22,8 +22,17 @@ class ReservaService {
     'Sala 3': {'cadeiras_max': 55, 'mesas_max': 14, 'cadeiras_conf1': 55, 'mesas_conf1': 1, 'cadeiras_conf2': 28, 'mesas_conf2': 14},
   };
 
-  static const int totalCadeiras = 115;
-  static const int totalMesas = 33;
+  static int totalCadeiras = 115;
+  static int totalMesas = 33;
+  static Future<void> carregarConfiguracoes() async {
+  final data = await Supabase.instance.client
+      .from('configuracoes')
+      .select('chave, valor');
+  for (final c in data) {
+    if (c['chave'] == 'max_cadeiras') totalCadeiras = c['valor'] as int;
+    if (c['chave'] == 'max_mesas') totalMesas = c['valor'] as int;
+  }
+}
 
   Future<List<EspacoComum>> listarEspacos() async {
     final response = await _supabase
@@ -255,7 +264,8 @@ class ReservaService {
 
   Future<void> cancelar(String reservaId) async {
     await _supabase.from('reservas').delete().eq('id', reservaId);
-  }
+    await _supabase.from('material_reservado').delete().eq('reserva_id', reservaId);
+}
 
   Future<bool> podeCancelar(String reservaId) async {
     final response = await _supabase

@@ -32,6 +32,7 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
   void initState() {
     super.initState();
     NotificationService.salvarTokenSala(widget.sala.id);
+    NotificationService.salvarSalaId(widget.sala.id);
     _carregar();
   }
 

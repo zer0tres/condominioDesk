@@ -93,6 +93,19 @@ serve(async (req) => {
     );
 
     const fcmData = await fcmRes.json();
+    if (!fcmRes.ok) {
+  const errorCode = fcmData?.error?.details?.[0]?.errorCode;
+  if (errorCode === 'UNREGISTERED' || fcmRes.status === 404) {
+    await fetch(
+      `${supabaseUrl}/rest/v1/salas?id=eq.${sala_id}`,
+      {
+        method: 'PATCH',
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fcm_token: null }),
+      }
+    );
+  }
+}
     return new Response(JSON.stringify(fcmData), { status: 200 });
   } catch (error) {
     return new Response(JSON.stringify({ error: String(error) }), { status: 500 });

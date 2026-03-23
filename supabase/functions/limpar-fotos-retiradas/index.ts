@@ -9,11 +9,9 @@ serve(async () => {
     "Content-Type": "application/json",
   };
 
-  const umMesAtras = new Date();
-  umMesAtras.setMonth(umMesAtras.getMonth() - 1);
-
-  const res = await fetch(
-    `${supabaseUrl}/rest/v1/encomendas?status=eq.retirada&retirado_em=lt.${umMesAtras.toISOString()}&foto_url=not.is.null&select=id,foto_url`,
+  const agora = new Date().toISOString();
+const res = await fetch(
+  `${supabaseUrl}/rest/v1/encomendas?foto_expira_em=lt.${agora}&foto_url=not.is.null&select=id,foto_url`,
     { headers }
   );
   const encomendas = await res.json();

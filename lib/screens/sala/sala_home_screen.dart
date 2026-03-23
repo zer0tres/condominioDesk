@@ -41,8 +41,7 @@ class _SalaHomeScreenState extends State<SalaHomeScreen> {
     try {
       final encomendas = await _encomendaService.listarPorSala(widget.sala.id);
       final espacos = await _reservaService.listarEspacos();
-      final todasReservas = await _reservaService.listarProximas();
-      final reservas = todasReservas.where((r) => r.salaId == widget.sala.id).toList();
+      final reservas = await _reservaService.listarProximasPorSala(widget.sala.id);
       setState(() {
         _encomendas = encomendas;
         _espacos = espacos;

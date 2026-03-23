@@ -52,6 +52,18 @@ class ReservaService {
         .order('hora_inicio');
     return response.map((e) => Reserva.fromJson(e)).toList();
   }
+  
+  Future<List<Reserva>> listarProximasPorSala(String salaId) async {
+  final hoje = DateTime.now().toIso8601String().split('T')[0];
+  final response = await _supabase
+      .from('reservas')
+      .select()
+      .eq('sala_id', salaId)
+      .gte('data', hoje)
+      .order('data')
+      .order('hora_inicio');
+  return response.map((e) => Reserva.fromJson(e)).toList();
+  }
 
   Future<List<Reserva>> listarPorData(DateTime data) async {
     final dataStr = data.toIso8601String().split('T')[0];

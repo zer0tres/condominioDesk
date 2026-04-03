@@ -1,11 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY")!;
 const ADMIN_EMAIL = "admar3000b@gmail.com";
 const FROM = "noreply@sahjo.com.br";
 const FROM_NAME = "AR3000 — Cabral Corporate & Offices";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" } });
   }

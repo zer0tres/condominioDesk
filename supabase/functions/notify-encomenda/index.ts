@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Gera JWT para autenticar com Google APIs usando service account
@@ -49,7 +48,7 @@ async function getAccessToken(serviceAccount: any): Promise<string> {
   return tokenData.access_token;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   try {
     const { sala_id, nome_destinatario, codigo_rastreio } = await req.json();
 

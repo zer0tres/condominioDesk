@@ -282,11 +282,15 @@ class ReservaService {
   Future<bool> podeCancelar(String reservaId) async {
     final response = await _supabase
         .from('reservas')
-        .select('data')
+        .select('data, hora_inicio')
         .eq('id', reservaId)
         .single();
-    final data = DateTime.parse(response['data']);
+    final partes = response['hora_inicio'].toString().split(':');
+    final dataReserva = DateTime.parse(response['data']).add(Duration(
+      hours: int.parse(partes[0]),
+      minutes: int.parse(partes[1]),
+    ));
     final limite = DateTime.now().add(const Duration(hours: 48));
-    return data.isAfter(limite);
+    return dataReserva.isAfter(limite);
   }
 }
